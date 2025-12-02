@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Поиск номера — Украина</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wrap {
+      max-width: 900px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      animation: slideIn 0.5s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 30px;
+      color: white;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    .mini {
+      font-size: 15px;
+      opacity: 0.95;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 12px 20px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .mini code {
+      background: rgba(255, 255, 255, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 30px;
+    }
+    
+    /* Панель пользователя */
+    .user-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 2px solid #667eea;
+    }
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #userStatus {
+      font-weight: 600;
+      color: #667eea;
+      font-size: 16px;
+    }
+    #searchesLeft {
+      color: #64748b;
+      font-size: 14px;
+    }
+    .buy-button {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+      font-size: 15px;
+    }
+    .buy-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+    }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    input {
+      flex: 1;
+      padding: 16px 20px;
+      font-size: 16px;
+      border: 2px solid #e0e7ff;
+      border-radius: 12px;
+      transition: all 0.3s;
+      font-family: 'Inter', sans-serif;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    button {
+      padding: 16px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Inter', sans-serif;
+    }
+    #searchBtn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    #searchBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+    #searchBtn:active {
+      transform: translateY(0);
+    }
+    #clearBtn {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+    #clearBtn:hover {
+      background: #667eea;
+      color: white;
+    }
+    #map {
+      height: 450px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      border: 3px solid #f0f4ff;
+    }
+    #result {
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #result.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    #result.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+    #result.info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #94a3b8;
+      font-size: 14px;
+      background: #f8fafc;
+    }
+
+    /* Модальные окна */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      animation: fadeIn 0.3s;
+      overflow-y: auto;
+    }
+    .modal.show {
+      display: block;
+    }
+    .modal-content {
+      background: white;
+      margin: 50px auto;
+      padding: 40px;
+      border-radius: 24px;
+      max-width: 1000px;
+      position: relative;
+      animation: slideUp 0.3s;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .close {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      font-size: 32px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+      transition: color 0.3s;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .close:hover {
+      color: #000;
+      background: #f1f5f9;
+    }
+
+    /* Карточки тарифов */
+    .pricing-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .pricing-card {
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-5px);
+    }
+    .pricing-card.standard {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 3px solid #3b82f6;
+    }
+    .pricing-card.premium {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 3px solid #f59e0b;
+    }
+    .card-header h3 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .features {
+      margin: 20px 0;
+    }
+    .feature {
+      padding: 10px 0;
+      color: #475569;
+      font-size: 15px;
+    }
+    .pricing-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .price-option {
+      background: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+      position: relative;
+    }
+    .price-option:hover {
+      border-color: #667eea;
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+    .price-option.popular {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .popular-badge {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .price-label {
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+    .price-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+    .save-badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    /* Окно оплаты */
+    .payment-modal {
+      max-width: 500px;
+    }
+    .payment-summary {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      color: #475569;
+    }
+    .summary-item.total {
+      border-top: 2px solid #e2e8f0;
+      margin-top: 10px;
+      padding-top: 15px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .payment-methods {
+      margin-top: 20px;
+    }
+    .payment-methods h3 {
+      margin-bottom: 15px;
+      color: #334155;
+    }
+    .payment-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .payment-btn:hover {
+      border-color: #667eea;
+      background: #f0f4ff;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        flex-direction: column;
+      }
+      header h1 {
+        font-size: 24px;
+      }
+      .pricing-container {
+        grid-template-columns: 1fr;
+      }
+      .user-panel {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🇺🇦 Поиск номера — Украина</h1>
+      <div class="mini">Введите номер в международном формате <code>+380123456789</code></div>
+    </header>
+
+    <div class="content">
+      <!-- Панель пользователя -->
+      <div class="user-panel">
+        <div class="user-info">
+          <span id="userStatus">🔒 Нет доступа</span>
+          <span id="searchesLeft">Купите пакет для начала работы</span>
+        </div>
+        <button id="buyBtn" class="buy-button">💎 Купить поиски</button>
+      </div>
+
+      <div class="controls">
+        <input id="phoneInput" type="text" placeholder="+380" autocomplete="tel" />
+        <button id="searchBtn">🔍 Поиск</button>
+        <button id="clearBtn">✖ Очистить</button>
+      </div>
+
+      <div id="result"></div>
+
+      <div id="map"></div>
+    </div>
+
+    <!-- Модальное окно тарифов -->
+    <div id="pricingModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closePricing">&times;</span>
+        <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">Выберите тариф</h2>
+        
+        <div class="pricing-container">
+          <!-- Стандарт пакет -->
+          <div class="pricing-card standard">
+            <div class="card-header">
+              <h3>🔵 СТАНДАРТ</h3>
+              <p class="subtitle">Последнее местоположение</p>
+            </div>
+            <div class="features">
+              <div class="feature">✅ Последнее известное местоположение</div>
+              <div class="feature">✅ Данные за последние 24 часа</div>
+              <div class="feature">✅ Информация об операторе</div>
+            </div>
+            <div class="pricing-options">
+              <div class="price-option" onclick="selectPlan('standard', 1, 29)">
+                <div class="price-label">1 поиск</div>
+                <div class="price-value">29 грн</div>
+              </div>
+              <div class="price-option" onclick="selectPlan('standard', 10, 199)">
+                <div class="price-label">10 поисков</div>
+                <div class="price-value">199 грн</div>
+                <div class="save-badge">Экономия 91 грн</div>
+              </div>
+              <div class="price-option popular" onclick="selectPlan('standard', 'unlimited', 499)">
+                <div class="popular-badge">Популярный</div>
+                <div class="price-label">Безлимит на месяц</div>
+                <div class="price-value">499 грн</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Премиум пакет -->
+          <div class="pricing-card premium">
+            <div class="card-header">
+              <h3>🌟 ПРЕМИУМ</h3>
+              <p class="subtitle">Поиск в реальном времени</p>
+            </div>
+            <div class="features">
+              <div class="feature">⚡ Поиск в реальном времени</div>
+              <div class="feature">⚡ Точное текущее местоположение</div>
+              <div class="feature">⚡ Приоритетная обработка</div>
+              <div class="feature">⚡ Расширенная информация</div>
+            </div>
+            <div class="pricing-options">
+              <div class="price-option" onclick="selectPlan('premium', 1, 39)">
+                <div class="price-label">1 поиск</div>
+                <div class="price-value">39 грн</div>
+              </div>
+              <div class="price-option" onclick="selectPlan('premium', 10, 249)">
+                <div class="price-label">10 поисков</div>
+                <div class="price-value">249 грн</div>
+                <div class="save-badge">Экономия 141 грн</div>
+              </div>
+              <div class="price-option popular" onclick="selectPlan('premium', 'unlimited', 699)">
+                <div class="popular-badge">Лучшее предложение</div>
+                <div class="price-label">Безлимит на месяц</div>
+                <div class="price-value">699 грн</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно оплаты -->
+    <div id="paymentModal" class="modal">
+      <div class="modal-content payment-modal">
+        <span class="close" id="closePayment">&times;</span>
+        <h2 style="text-align: center; margin-bottom: 20px;">💳 Оплата</h2>
+        
+        <div class="payment-summary">
+          <div class="summary-item">
+            <span>Тариф:</span>
+            <span id="selectedPlan"></span>
+          </div>
+          <div class="summary-item">
+            <span>Количество:</span>
+            <span id="selectedAmount"></span>
+          </div>
+          <div class="summary-item total">
+            <span>Итого:</span>
+            <span id="totalPrice"></span>
+          </div>
+        </div>
+
+        <div class="payment-methods">
+          <h3>Выберите способ оплаты:</h3>
+          <button class="payment-btn" onclick="processPayment('card')">💳 Банковская карта</button>
+          <button class="payment-btn" onclick="processPayment('crypto')">₿ Криптовалюта</button>
+          <button class="payment-btn" onclick="processPayment('other')">📱 Другие способы</button>
+        </div>
+
+        <p style="text-align: center; color: #888; font-size: 14px; margin-top: 20px;">
+          🔒 Безопасная оплата через защищенное соединение
+        </p>
+      </div>
+    </div>
+
+    <footer>© 2025 Все права защищены.</footer>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const ukraine = {
+      name: 'Украина',
+      lat: 48.3794,
+      lon: 31.1656,
+      maxLength: 12,
+    };
+
+    const state = {
+      map: null,
+      markers: {},
+      user: {
+        isPremium: false,
+        searchesLeft: 0,
+        isUnlimited: false
+      },
+      selectedPlan: null
+    };
+
+    const validOperatorCodes = {
+      '67': { lat: 50.4501, lon: 30.5236, operator: 'Киевстар', city: 'Киев' },
+      '68': { lat: 50.4501, lon: 30.5236, operator: 'Киевстар', city: 'Киев' },
+      '96': { lat: 50.4501, lon: 30.5236, operator: 'Киевстар', city: 'Киев' },
+      '97': { lat: 50.4501, lon: 30.5236, operator: 'Киевстар', city: 'Киев' },
+      '98': { lat: 50.4501, lon: 30.5236, operator: 'Киевстар', city: 'Киев' },
+      '50': { lat: 49.8397, lon: 24.0297, operator: 'Vodafone', city: 'Львов' },
+      '66': { lat: 49.8397, lon: 24.0297, operator: 'Vodafone', city: 'Львов' },
+      '95': { lat: 49.8397, lon: 24.0297, operator: 'Vodafone', city: 'Львов' },
+      '99': { lat: 49.8397, lon: 24.0297, operator: 'Vodafone', city: 'Львов' },
+      '63': { lat: 46.4825, lon: 30.7233, operator: 'lifecell', city: 'Одесса' },
+      '73': { lat: 46.4825, lon: 30.7233, operator: 'lifecell', city: 'Одесса' },
+      '93': { lat: 46.4825, lon: 30.7233, operator: 'lifecell', city: 'Одесса' },
+      '91': { lat: 49.9935, lon: 36.2304, operator: 'Utel', city: 'Харьков' },
+      '92': { lat: 49.9935, lon: 36.2304, operator: 'PeopleNet', city: 'Харьков' },
+      '94': { lat: 49.5883, lon: 34.5514, operator: 'Интертелеком', city: 'Днепр' },
+    };
+    
+    const allValidCodes = Object.keys(validOperatorCodes);
+
+    function initMap() {
+      const map = L.map('map').setView([ukraine.lat, ukraine.lon], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      state.map = map;
+    }
+
+    initMap();
+
+    function normalizeDigits(s) { 
+      return (s || '').replace(/[^\d]/g, ''); 
+    }
+
+    function getCoordinatesByCode(code, phone) {
+      const region = validOperatorCodes[code];
+      if (!region) return null;
+      
+      let hash = 0;
+      for (let i = 0; i < phone.length; i++) {
+        hash = ((hash << 5) - hash) + phone.charCodeAt(i);
+        hash = hash & hash;
+      }
+      
+      const latOffset = ((hash % 10000) / 10000 - 0.5) * 1;
+      const lonOffset = (((hash / 10000) % 10000) / 10000 - 0.5) * 1;
+      
+      return {
+        coords: [region.lat + latOffset, region.lon + lonOffset],
+        operator: region.operator,
+        city: region.city
+      };
+    }
+
+    function updateUserPanel() {
+      const statusEl = document.getElementById('userStatus');
+      const searchesEl = document.getElementById('searchesLeft');
+      
+      if (state.user.isUnlimited) {
+        statusEl.textContent = state.user.isPremium ? '🌟 Премиум Безлимит' : '🔵 Стандарт Безлимит';
+        searchesEl.textContent = 'Неограниченные поиски до конца месяца';
+      } else if (state.user.searchesLeft > 0) {
+        statusEl.textContent = state.user.isPremium ? '🌟 Премиум Аккаунт' : '🔵 Стандарт Аккаунт';
+        searchesEl.textContent = `Осталось поисков: ${state.user.searchesLeft}`;
+      } else {
+        statusEl.textContent = '🔒 Нет доступа';
+        searchesEl.textContent = 'Купите пакет для начала работы';
+      }
+    }
+
+    // Открытие/закрытие модальных окон
+    document.getElementById('buyBtn').addEventListener('click', () => {
+      document.getElementById('pricingModal').classList.add('show');
+    });
+
+    document.getElementById('closePricing').addEventListener('click', () => {
+      document.getElementById('pricingModal').classList.remove('show');
+    });
+
+    document.getElementById('closePayment').addEventListener('click', () => {
+      document.getElementById('paymentModal').classList.remove('show');
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target.id === 'pricingModal') {
+        document.getElementById('pricingModal').classList.remove('show');
+      }
+      if (e.target.id === 'paymentModal') {
+        document.getElementById('paymentModal').classList.remove('show');
+      }
+    });
+
+    // Выбор тарифа
+    function selectPlan(type, searches, price) {
+      const planName = type === 'premium' ? '🌟 ПРЕМИУМ' : '🔵 СТАНДАРТ';
+      const amountText = searches === 'unlimited' ? 'Безлимит на месяц' : `${searches} поиск${searches > 1 ? 'ов' : ''}`;
+      
+      document.getElementById('selectedPlan').textContent = planName;
+      document.getElementById('selectedAmount').textContent = amountText;
+      document.getElementById('totalPrice').textContent = `${price} грн`;
+      
+      state.selectedPlan = { type, searches, price };
+      
+      document.getElementById('pricingModal').classList.remove('show');
+      document.getElementById('paymentModal').classList.add('show');
+    }
+
+    // Обработка оплаты
+    function processPayment(method) {
+      if (!state.selectedPlan) return;
+      
+      alert(`🔄 Перенаправление на оплату через ${method === 'card' ? 'банковскую карту' : method === 'crypto' ? 'криптовалюту' : 'другой способ'}...\n\nЗдесь будет интеграция с платежной системой`);
+      
+      // Симуляция успешной оплаты
+      setTimeout(() => {
+        const { type, searches } = state.selectedPlan;
+        
+        if (searches === 'unlimited') {
+          state.user.isUnlimited = true;
+          state.user.searchesLeft = 999999;
+        } else {
+          state.user.searchesLeft += parseInt(searches);
+          state.user.isUnlimited = false;
+        }
+        
+        state.user.isPremium = (type === 'premium');
+        
+        updateUserPanel();
+        document.getElementById('paymentModal').classList.remove('show');
+        renderResult('✅ Оплата прошла успешно! Поиски добавлены на ваш счет.', 'success');
+      }, 1500);
+    }
+
+    // Поиск номера
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      // ПЕРВАЯ ПРОВЕРКА - наличие поисков
+      if (state.user.searchesLeft <= 0) {
+        renderResult('🔒 Для поиска номеров необходимо приобрести пакет!', 'error');
+        setTimeout(() => {
+          document.getElementById('pricingModal').classList.add('show');
+        }, 800);
+        return;
+      }
+
+      const input = document.getElementById('phoneInput').value;
+
+      const validNumberPattern = /^\+?\d+$/;
+      if (!validNumberPattern.test(input)) {
+        renderResult('⚠️ Номер должен начинаться с + и содержать только цифры!', 'error');
+        return;
+      }
+
+      const normalizedInput = normalizeDigits(input);
+
+      if (normalizedInput.length !== ukraine.maxLength) {
+        renderResult(`⚠️ Неверная длина номера! Требуется ${ukraine.maxLength} цифр.`, 'error');
+        return;
+      }
+
+      if (!normalizedInput.startsWith('380')) {
+        renderResult('⚠️ Номер должен начинаться с +380 (код Украины)!', 'error');
+        return;
+      }
+
+      const operatorCode = normalizedInput.slice(3, 5);
+
+      if (!allValidCodes.includes(operatorCode)) {
+        renderResult(`⚠️ Код оператора "${operatorCode}" не существует!`, 'error');
+        return;
+      }
+
+      const subscriberNumber = normalizedInput.slice(5);
+      const allSame = subscriberNumber.split('').every(digit => digit === subscriberNumber[0]);
+      if (allSame && (subscriberNumber[0] === '0' || subscriberNumber[0] === '1')) {
+        renderResult('⚠️ Такой номер выглядит нереалистично!', 'error');
+        return;
+      }
+
+      if (state.markers[normalizedInput]) {
+        state.map.setView(state.markers[normalizedInput].getLatLng(), 10);
+        renderResult('ℹ️ Этот номер уже был найден на карте!', 'info');
+        return;
+      }
+
+      const result = getCoordinatesByCode(operatorCode, normalizedInput);
+      
+      if (!result) {
+        renderResult('⚠️ Не удалось определить местоположение номера!', 'error');
+        return;
+      }
+
+      // Уменьшаем количество поисков
+      if (!state.user.isUnlimited) {
+        state.user.searchesLeft--;
+        updateUserPanel();
+      }
+
+      Object.values(state.markers).forEach(marker => state.map.removeLayer(marker));
+
+      const searchType = state.user.isPremium ? '⚡ В реальном времени' : '📍 Последнее местоположение';
+      const popupContent = `
+        <div style="text-align: center; min-width: 150px;">
+          <strong style="font-size: 16px;">📱 ${result.operator}</strong><br>
+          <span style="color: #666;">📍 ${result.city}</span><br>
+          <span style="font-size: 12px; color: #999;">+${normalizedInput}</span><br>
+          <span style="font-size: 11px; color: #10b981; margin-top: 5px; display: block;">${searchType}</span>
+        </div>
+      `;
+
+      const marker = L.marker(result.coords).addTo(state.map).bindPopup(popupContent).openPopup();
+
+      state.markers = {};
+      state.markers[normalizedInput] = marker;
+
+      state.map.setView(result.coords, 10);
+
+      renderResult(`✅ Номер найден! Оператор: ${result.operator}, Регион: ${result.city}`, 'success');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('phoneInput').value = '';
+      document.getElementById('result').style.display = 'none';
+      Object.values(state.markers).forEach(marker => state.map.removeLayer(marker));
+      state.markers = {};
+      state.map.setView([ukraine.lat, ukraine.lon], 6);
+    });
+
+    function renderResult(message, type = 'success') {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = message;
+      resultElement.className = type;
+      resultElement.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
